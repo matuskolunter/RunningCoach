@@ -23,12 +23,16 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [tab, setTab] = useState("upcoming");
+  const [adminEmails, setAdminEmails] = useState([]);
 
   const refresh = useCallback(() => {
     api.listTrainings().then(setTrainings).catch(() => {});
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { api.getConfig().then((c) => setAdminEmails(c.admin_emails || [])).catch(() => {}); }, []);
+
+  const isAdmin = identity && adminEmails.includes(identity.email.toLowerCase());
 
   const onSavedIdentity = (id) => { setIdentity(id); saveIdentity(id); };
 
@@ -86,11 +90,15 @@ export default function App() {
                 Objav bežeckú komunitu a pridaj sa na <span className="text-primary">bežecké tréningy</span>
               </h1>
               <p className="text-muted-foreground mt-4 max-w-xl animate-fade-up" style={{ animationDelay: "120ms" }}>
-                Vytváraj tréningy, registruj sa jedným klikom a sleduj, koľkých behov si sa zúčastnil.
+                {isAdmin
+                  ? "Vytváraj tréningy, spravuj ich a sleduj prihlásených bežcov."
+                  : "Prihlás sa na tréningy jedným klikom a sleduj, koľkých behov si sa zúčastnil."}
               </p>
-              <div className="mt-8 animate-fade-up" style={{ animationDelay: "180ms" }}>
-                <CreateTrainingDialog identity={identity} onCreated={refresh} />
-              </div>
+              {isAdmin && (
+                <div className="mt-8 animate-fade-up" style={{ animationDelay: "180ms" }}>
+                  <CreateTrainingDialog identity={identity} onCreated={refresh} />
+                </div>
+              )}
             </div>
           </header>
 
@@ -108,7 +116,7 @@ export default function App() {
 
             {filtered.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground" data-testid="empty-state">
-                Žiadne tréningy. {tab === "upcoming" && "Vytvor prvý!"}
+                Žiadne tréningy. {tab === "upcoming" && isAdmin && "Vytvor prvý!"}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

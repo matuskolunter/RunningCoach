@@ -26,6 +26,13 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()}
+
+
+def is_admin(email: Optional[str]) -> bool:
+    return bool(email) and email.strip().lower() in ADMIN_EMAILS
+
+
 # ---------- Models ----------
 class UserCreate(BaseModel):
     name: str
@@ -101,6 +108,8 @@ async def get_user(email: str):
 # ---------- Training routes ----------
 @api_router.post("/trainings", response_model=Training)
 async def create_training(input: TrainingCreate):
+    if not is_admin(input.organizer_email):
+        raise HTTPException(status_code=403, detail="Len organizátor môže vytvárať tréningy")
     training = Training(**input.model_dump())
     await db.trainings.insert_one(training.model_dump())
     return training
@@ -190,6 +199,11 @@ async def user_dashboard(email: str):
 @api_router.get("/")
 async def root():
     return {"message": "RunPulse API"}
+
+
+@api_router.get("/config")
+async def get_config():
+    return {"admin_emails": sorted(ADMIN_EMAILS)}
 
 
 app.include_router(api_router)
