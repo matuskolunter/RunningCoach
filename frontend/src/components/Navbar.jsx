@@ -9,7 +9,7 @@ export const Navbar = ({ identity, view, setView, onEditIdentity }) => {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <Activity className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-heading text-xl font-extrabold uppercase tracking-tight">Run<span className="text-primary">Pulse</span></span>
+          <span className="font-heading text-xl font-extrabold uppercase tracking-tight">Running<span className="text-primary">Coach</span></span>
         </button>
 
         <div className="flex items-center gap-1 sm:gap-2">
