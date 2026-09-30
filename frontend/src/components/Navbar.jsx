@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Activity, LayoutDashboard, CalendarDays, UserRound } from "lucide-react";
+import { Footprints, LayoutDashboard, CalendarDays, UserRound } from "lucide-react";
 
 export const Navbar = ({ identity, view, setView, onEditIdentity }) => {
   return (
@@ -7,7 +7,7 @@ export const Navbar = ({ identity, view, setView, onEditIdentity }) => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button onClick={() => setView("events")} className="flex items-center gap-2" data-testid="nav-logo">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Activity className="h-5 w-5 text-primary-foreground" />
+            <Footprints className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-heading text-xl font-extrabold uppercase tracking-tight">Running<span className="text-primary">Coach</span></span>
         </button>
