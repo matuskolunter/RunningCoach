@@ -1,0 +1,61 @@
+{
+  "project_name": "Bežecké Tréningy & Udalosti (RunPulse / TempoRun)",
+  "language": "sk",
+  "archetype": "THE PERFORMANCE PRO / KINETIC ENERGY",
+  "theme": {
+    "default": "dark",
+    "background": "#0D0F12",
+    "surface": "#16191E",
+    "surface_elevated": "#1E232B",
+    "surface_border": "#2A303C",
+    "primary": "#FF5500",
+    "primary_hover": "#E04B00",
+    "primary_foreground": "#FFFFFF",
+    "accent_cyan": "#00E5FF",
+    "accent_green": "#10B981",
+    "text_main": "#F3F4F6",
+    "text_muted": "#9CA3AF",
+    "text_dim": "#6B7280"
+  },
+  "typography": {
+    "font_family_heading": "Barlow Condensed, Outfit, sans-serif",
+    "font_family_body": "Inter, system-ui, sans-serif",
+    "font_family_mono": "JetBrains Mono, monospace",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold tracking-tight",
+      "h4": "text-lg sm:text-xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-muted-foreground",
+      "label": "text-xs font-mono uppercase tracking-widest text-primary"
+    }
+  },
+  "key_features_and_flows": {
+    "simple_registration": "Runner identity using simple Name + Email (stored in localStorage / session or backend profile, no password requirement).",
+    "event_creation_modal": "Form to create new running training with: Title, Date & Time, Location, Pace/Difficulty, Distance (km), Max Capacity, Description.",
+    "event_listing": "Filterable list/grid of upcoming trainings (by distance, pace, location, search). Shows registered runners count vs capacity with progress ring/bar.",
+    "runner_dashboard": "Personal dashboard for runner showing: total attended trainings count, upcoming registered events, past attended events history, total kilometers run badge.",
+    "join_leave_toggle": "Instant One-Click Join / Leave training button with real-time capacity feedback and toast alerts."
+  },
+  "component_path": "/app/frontend/src/components",
+  "image_urls": {
+    "hero_banner": "https://images.unsplash.com/photo-1758683658297-d7c2512dcb0a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwzfHxydW5uZXJzJTIwdHJhaWwlMjBydW5uaW5nJTIwbWFyYXRob24lMjBncm91cHxlbnwwfHx8fDE3OTA4MDAwMjl8MA&ixlib=rb-4.1.0&q=85",
+    "marathon_group": "https://images.unsplash.com/photo-1760315972424-1637530daead?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxydW5uZXJzJTIwdHJhaWwlMjBydW5uaW5nJTIwbWFyYXRob24lMjBncm91cHxlbnwwfHx8fDE3OTA4MDAwMjl8MA&ixlib=rb-4.1.0&q=85",
+    "street_runners": "https://images.unsplash.com/photo-1761064039797-837fc97e5c86?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHw0fHxydW5uZXJzJTIwdHJhaWwlMjBydW5uaW5nJTIwbWFyYXRob24lMjBncm91cHxlbnwwfHx8fDE3OTA4MDAwMjl8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "design_elements": {
+    "cards": "Subtle border `#2A303C` on dark background `#16191E`, sharp to 8px rounded corners (`rounded-xl`), hover glow effect with border-orange-500/50.",
+    "buttons": "Pill or crisp 8px rounded (`rounded-lg`), bold uppercase font, solid orange primary CTA (`bg-[#FF5500] hover:bg-[#E04B00] text-white font-bold`), active state scaling `active:scale-95`.",
+    "badges": "Tactical style stats badge with dark background, bright border, and mono text (e.g. `10 KM`, `Pace: 5:15 min/km`, `3 / 15 bezcov`).",
+    "navigation": "Glassmorphic floating navbar with `backdrop-blur-xl bg-[#0D0F12]/80 border-b border-[#2A303C]` z-50 stickiness.",
+    "testing": "All key interactive buttons, inputs, links, tabs, and counters MUST contain kebab-case data-testid attributes."
+  },
+  "instructions_to_main_agent": [
+    "Language MUST be in Slovak (SK) e.g., 'Bežecké Tréningy', 'Vytvoriť tréning', 'Prihlásiť sa', 'Odhlásiť sa', 'Moja účasť', 'Môj profil', 'Počet absolvovaných tréningov'.",
+    "Use Lucide-react icons for sport stats (MapPin, Calendar, Clock, Flame, Users, Trophy, Award, CheckCircle, Plus, Search, Filter, Runner/Activity).",
+    "Ensure all interactive components have proper data-testid attributes e.g., data-testid='create-event-button', data-testid='runner-email-input', data-testid='join-event-btn-1'.",
+    "Use Sonner for toast notifications when a user registers, creates an event, or leaves an event.",
+    "Simple identity modal / runner switcher: Allow user to input or switch name/email easily to view their personalized dashboard and attendance records."
+  ]
+}
