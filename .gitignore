@@ -86,3 +86,5 @@ android-sdk/
 backend/.env
 frontend/.env
 .env
+frontend/.env
+.env
