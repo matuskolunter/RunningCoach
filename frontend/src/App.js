@@ -83,7 +83,7 @@ export default function App() {
             <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
               <p className="font-mono-t text-xs uppercase tracking-widest text-primary mb-3 animate-fade-up">Bežecká komunita</p>
               <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight max-w-2xl animate-fade-up" style={{ animationDelay: "60ms" }}>
-                Objav a prihlás sa na <span className="text-primary">bežecké tréningy</span>
+                Objav bežeckú komunitu a pridaj sa na <span className="text-primary">bežecké tréningy</span>
               </h1>
               <p className="text-muted-foreground mt-4 max-w-xl animate-fade-up" style={{ animationDelay: "120ms" }}>
                 Vytváraj tréningy, registruj sa jedným klikom a sleduj, koľkých behov si sa zúčastnil.
