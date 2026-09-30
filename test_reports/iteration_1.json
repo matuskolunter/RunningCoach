@@ -1,0 +1,24 @@
+{
+  "summary": "Backend (7 endpoints) and frontend core flow (identity, join/leave, dashboard, tabs, search, create-training) all working. Slovak UI renders correctly, toast on create, participant count updates live, button switches Prihlásiť sa <-> Odhlásiť sa.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "POST /api/users upsert returns user (Ján Bežec/jan@email.sk)",
+    "GET /api/users/{email} returns 200 with data / 404 for missing",
+    "GET /api/trainings lists trainings sorted by date (seed: 1 past May 2026 + 3 upcoming)",
+    "POST /api/trainings creates training with all fields (id returned)",
+    "POST /api/trainings/{id}/join idempotent (no duplicate on re-join)",
+    "POST /api/trainings/{id}/leave removes participant (count 1 -> 0)",
+    "GET /api/users/{email}/dashboard returns attended_count/upcoming_count/total_km + upcoming[]/past[] arrays correctly split",
+    "Frontend: identity dialog shows on first visit, saves to localStorage, then events render",
+    "Frontend: join-btn click -> participants count went 1/20 -> 2/20, button switched to Odhlásiť sa, toast shown",
+    "Frontend: nav-dashboard-btn shows stat-attended, stat-upcoming, stat-km cards with values",
+    "Frontend: tab-past shows 1 past card, tab-upcoming default, search filters by title/location",
+    "Frontend: create-training dialog submitted, 'Tréning vytorený!' toast, new training appears in list"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "Minor a11y console warning: DialogContent missing aria-describedby (non-blocking). test_credentials.md not required (passwordless app)."
+}
