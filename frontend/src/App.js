@@ -6,6 +6,7 @@ import { IdentityDialog } from "@/components/IdentityDialog";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { TrainingCard } from "@/components/TrainingCard";
 import { Dashboard } from "@/components/Dashboard";
+import { OrganizerDashboard } from "@/components/OrganizerDashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -75,7 +76,7 @@ export default function App() {
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <Toaster position="top-center" theme="dark" richColors />
-      <Navbar identity={identity} view={view} setView={setView} onEditIdentity={() => setIdentityOpen(true)} />
+      <Navbar identity={identity} view={view} setView={setView} onEditIdentity={() => setIdentityOpen(true)} isAdmin={isAdmin} />
 
       <IdentityDialog open={identityOpen} onOpenChange={setIdentityOpen} onSaved={onSavedIdentity} initial={identity} />
 
@@ -129,11 +130,15 @@ export default function App() {
         </>
       ) : (
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          {identity ? <Dashboard identity={identity} /> : (
+          {!identity ? (
             <div className="text-center py-20">
               <p className="text-muted-foreground mb-4">Najprv zadaj svoj profil.</p>
               <Button onClick={() => setIdentityOpen(true)} className="bg-primary text-primary-foreground font-bold">Zadať profil</Button>
             </div>
+          ) : view === "organizer" && isAdmin ? (
+            <OrganizerDashboard identity={identity} />
+          ) : (
+            <Dashboard identity={identity} />
           )}
         </main>
       )}

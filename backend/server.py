@@ -206,6 +206,56 @@ async def get_config():
     return {"admin_emails": sorted(ADMIN_EMAILS)}
 
 
+@api_router.get("/admin/report")
+async def admin_report(admin_email: str):
+    if not is_admin(admin_email):
+        raise HTTPException(status_code=403, detail="Prístup len pre organizátora")
+    docs = await db.trainings.find({}, {"_id": 0}).sort("date", 1).to_list(1000)
+    trainings = [Training(**d) for d in docs]
+    now = datetime.now(timezone.utc)
+
+    def parse(dt: str):
+        try:
+            d = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+            if d.tzinfo is None:
+                d = d.replace(tzinfo=timezone.utc)
+            return d
+        except Exception:
+            return now
+
+    # attended count per email = number of PAST trainings they participated in
+    attended = {}
+    registered_total = {}
+    for t in trainings:
+        past = parse(t.date) < now
+        for p in t.participants:
+            registered_total[p.email] = registered_total.get(p.email, 0) + 1
+            if past:
+                attended[p.email] = attended.get(p.email, 0) + 1
+
+    result = []
+    for t in trainings:
+        result.append({
+            "id": t.id,
+            "title": t.title,
+            "date": t.date,
+            "location": t.location,
+            "distance_km": t.distance_km,
+            "capacity": t.capacity,
+            "is_past": parse(t.date) < now,
+            "participants": [
+                {
+                    "name": p.name,
+                    "email": p.email,
+                    "attended_count": attended.get(p.email, 0),
+                    "registered_count": registered_total.get(p.email, 0),
+                }
+                for p in t.participants
+            ],
+        })
+    return {"trainings": result}
+
+
 app.include_router(api_router)
 
 app.add_middleware(

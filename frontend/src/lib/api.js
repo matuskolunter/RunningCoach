@@ -11,4 +11,5 @@ export const api = {
   leave: (id, name, email) => axios.post(`${API}/trainings/${id}/leave`, { name, email }).then((r) => r.data),
   dashboard: (email) => axios.get(`${API}/users/${encodeURIComponent(email)}/dashboard`).then((r) => r.data),
   getConfig: () => axios.get(`${API}/config`).then((r) => r.data),
+  adminReport: (adminEmail) => axios.get(`${API}/admin/report`, { params: { admin_email: adminEmail } }).then((r) => r.data),
 };
