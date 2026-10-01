@@ -3,13 +3,13 @@ import "@/App.css";
 import { Toaster } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { IdentityDialog } from "@/components/IdentityDialog";
-import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
+import { TrainingFormDialog } from "@/components/TrainingFormDialog";
 import { TrainingCard } from "@/components/TrainingCard";
 import { Dashboard } from "@/components/Dashboard";
 import { OrganizerDashboard } from "@/components/OrganizerDashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { loadIdentity, saveIdentity, isPast } from "@/lib/identity";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ export default function App() {
   const [busyId, setBusyId] = useState(null);
   const [tab, setTab] = useState("upcoming");
   const [adminEmails, setAdminEmails] = useState([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingTraining, setEditingTraining] = useState(null);
 
   const refresh = useCallback(() => {
     api.listTrainings().then(setTrainings).catch(() => {});
@@ -66,6 +68,19 @@ export default function App() {
     } finally { setBusyId(null); }
   };
 
+  const onDelete = async (t) => {
+    if (!guard()) return;
+    try {
+      await api.deleteTraining(t.id, identity.email);
+      toast.success(`Tréning "${t.title}" odstránený`);
+      refresh();
+    } catch {
+      toast.error("Odstránenie zlyhalo");
+    }
+  };
+
+  const onEdit = (t) => { setEditingTraining(t); setFormOpen(true); };
+
   const filtered = trainings
     .filter((t) => (tab === "upcoming" ? !isPast(t.date) : isPast(t.date)))
     .filter((t) => {
@@ -79,6 +94,8 @@ export default function App() {
       <Navbar identity={identity} view={view} setView={setView} onEditIdentity={() => setIdentityOpen(true)} isAdmin={isAdmin} />
 
       <IdentityDialog open={identityOpen} onOpenChange={setIdentityOpen} onSaved={onSavedIdentity} initial={identity} />
+
+      <TrainingFormDialog open={formOpen} onOpenChange={setFormOpen} identity={identity} training={editingTraining} onSaved={refresh} />
 
       {view === "events" ? (
         <>
@@ -97,7 +114,9 @@ export default function App() {
               </p>
               {isAdmin && (
                 <div className="mt-8 animate-fade-up" style={{ animationDelay: "180ms" }}>
-                  <CreateTrainingDialog identity={identity} onCreated={refresh} />
+                  <Button onClick={() => { setEditingTraining(null); setFormOpen(true); }} data-testid="open-create-training-btn" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wide active:scale-95 transition-transform">
+                    <Plus className="h-4 w-4 mr-1" /> Vytvoriť tréning
+                  </Button>
                 </div>
               )}
             </div>
@@ -122,7 +141,7 @@ export default function App() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filtered.map((t, i) => (
-                  <TrainingCard key={t.id} training={t} identity={identity} onJoin={onJoin} onLeave={onLeave} busy={busyId === t.id} index={i} />
+                  <TrainingCard key={t.id} training={t} identity={identity} onJoin={onJoin} onLeave={onLeave} busy={busyId === t.id} index={i} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             )}

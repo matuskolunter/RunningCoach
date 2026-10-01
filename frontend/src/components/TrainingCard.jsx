@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, Users, Flame, Gauge, CheckCircle2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { MapPin, Calendar, Clock, Users, Flame, Gauge, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { formatDate, formatTime, isPast } from "@/lib/identity";
 
-export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index = 0 }) => {
+export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index = 0, isAdmin, onEdit, onDelete }) => {
   const joined = identity && training.participants.some((p) => p.email === identity.email);
   const full = training.participants.length >= training.capacity;
   const past = isPast(training.date);
@@ -34,6 +35,7 @@ export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index 
       <div className="flex flex-wrap gap-2 mb-4">
         <Badge variant="outline" className="font-mono-t text-xs border-border"><Flame className="h-3 w-3 mr-1 text-primary" />{training.distance_km} KM</Badge>
         {training.pace ? <Badge variant="outline" className="font-mono-t text-xs border-border"><Gauge className="h-3 w-3 mr-1 text-accent" />{training.pace}</Badge> : null}
+        {training.use_permanentka === false ? <Badge variant="outline" className="font-mono-t text-xs border-border text-muted-foreground">FREE</Badge> : null}
       </div>
 
       {training.description ? <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{training.description}</p> : null}
@@ -58,6 +60,35 @@ export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index 
             {full ? "Plná kapacita" : <><CheckCircle2 className="h-4 w-4 mr-1" /> Prihlásiť sa</>}
           </Button>
         )
+      )}
+
+      {isAdmin && (
+        <div className="flex gap-2 mt-2 pt-3 border-t border-border">
+          <Button size="sm" variant="outline" onClick={() => onEdit(training)} data-testid={`edit-btn-${training.id}`} className="flex-1 border-border font-semibold text-xs">
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Upraviť
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" data-testid={`delete-btn-${training.id}`} className="flex-1 border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 font-semibold text-xs">
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Odstrániť
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border" data-testid={`delete-dialog-${training.id}`}>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-heading uppercase tracking-tight">Odstrániť tréning?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Naozaj chceš odstrániť tréning <span className="text-foreground font-semibold">{training.title}</span>? Táto akcia sa nedá vrátiť.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid={`delete-cancel-${training.id}`}>Zrušiť</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(training)} data-testid={`delete-confirm-${training.id}`} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold">
+                  Odstrániť
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       )}
     </Card>
   );

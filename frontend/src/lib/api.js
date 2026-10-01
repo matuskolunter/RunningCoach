@@ -13,4 +13,7 @@ export const api = {
   getConfig: () => axios.get(`${API}/config`).then((r) => r.data),
   adminReport: (adminEmail) => axios.get(`${API}/admin/report`, { params: { admin_email: adminEmail } }).then((r) => r.data),
   resetPermanentka: (adminEmail, email) => axios.post(`${API}/admin/reset-permanentka`, { admin_email: adminEmail, email }).then((r) => r.data),
+  adjustPermanentka: (adminEmail, email, amount) => axios.post(`${API}/admin/permanentka-adjust`, { admin_email: adminEmail, email, amount }).then((r) => r.data),
+  updateTraining: (id, payload) => axios.put(`${API}/trainings/${id}`, payload).then((r) => r.data),
+  deleteTraining: (id, adminEmail) => axios.delete(`${API}/trainings/${id}`, { params: { admin_email: adminEmail } }).then((r) => r.data),
 };

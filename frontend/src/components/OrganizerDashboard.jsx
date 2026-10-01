@@ -5,10 +5,61 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Users, MapPin, Calendar, Trophy, ClipboardList, Ticket, UsersRound, RotateCcw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Users, MapPin, Calendar, Trophy, ClipboardList, Ticket, UsersRound, RotateCcw, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/identity";
 import { toast } from "sonner";
+
+const AdjustPermanentkaDialog = ({ runner, identity, onDone, index }) => {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    const n = parseInt(amount, 10);
+    if (!n) { toast.error("Zadaj počet tréningov"); return; }
+    setLoading(true);
+    try {
+      await api.adjustPermanentka(identity.email, runner.email, n);
+      toast.success(`${n > 0 ? "Pridané" : "Odpočítané"} ${Math.abs(n)} do permanentky — ${runner.name}`);
+      setAmount(""); setOpen(false); onDone();
+    } catch {
+      toast.error("Úprava zlyhala");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" data-testid={`org-adjust-perm-${index}`} className="border-border font-semibold text-xs">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Pridať
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-border sm:max-w-sm" data-testid={`org-adjust-dialog-${index}`}>
+        <DialogHeader>
+          <DialogTitle className="font-heading uppercase tracking-tight">Pridať do permanentky</DialogTitle>
+          <DialogDescription>
+            Pridaj počet tréningov do permanentky pre <span className="text-foreground font-semibold">{runner.name}</span> (napr. zo starej papierovej permanentky). Záporné číslo odpočíta.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label>Počet tréningov</Label>
+          <Input type="number" data-testid={`org-adjust-input-${index}`} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="napr. 4" />
+        </div>
+        <DialogFooter>
+          <Button onClick={submit} disabled={loading} data-testid={`org-adjust-confirm-${index}`} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+            {loading ? "Ukladám..." : "Pridať"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const OrganizerDashboard = ({ identity }) => {
   const [data, setData] = useState(null);
@@ -108,6 +159,8 @@ export const OrganizerDashboard = ({ identity }) => {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
+                    <div className="inline-flex gap-2 justify-end">
+                    <AdjustPermanentkaDialog runner={r} identity={identity} onDone={load} index={i} />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button size="sm" variant="outline" disabled={resetting === r.email || r.permanentka_stamps === 0} data-testid={`org-reset-perm-${i}`} className="border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 font-semibold text-xs">
@@ -130,6 +183,7 @@ export const OrganizerDashboard = ({ identity }) => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

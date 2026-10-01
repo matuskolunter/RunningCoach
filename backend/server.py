@@ -90,6 +90,24 @@ class ResetPermanentkaBody(BaseModel):
     email: EmailStr
 
 
+class AdjustPermanentkaBody(BaseModel):
+    admin_email: EmailStr
+    email: EmailStr
+    amount: int
+
+
+class TrainingUpdate(BaseModel):
+    admin_email: EmailStr
+    title: str
+    date: str
+    location: str
+    distance_km: float
+    capacity: int
+    description: Optional[str] = ""
+    pace: Optional[str] = ""
+    use_permanentka: bool = True
+
+
 # ---------- User routes ----------
 @api_router.post("/users", response_model=User)
 async def upsert_user(input: UserCreate):
@@ -198,8 +216,9 @@ async def user_dashboard(email: str):
     upcoming.sort(key=lambda t: t.date)
     past.sort(key=lambda t: t.date, reverse=True)
     reset = await db.permanentka_resets.find_one({"email": email}, {"_id": 0})
-    baseline = reset["baseline"] if reset else 0
-    permanentka_count = max(0, permanentka_count - baseline)
+    baseline = reset.get("baseline", 0) if reset else 0
+    adjustment = reset.get("adjustment", 0) if reset else 0
+    permanentka_count = max(0, permanentka_count - baseline + adjustment)
     return {
         "attended_count": len(past),
         "permanentka_count": permanentka_count,
@@ -253,9 +272,10 @@ async def admin_report(admin_email: str):
                     permanentka[p.email] = permanentka.get(p.email, 0) + 1
 
     runners = []
-    resets = {r["email"]: r["baseline"] for r in await db.permanentka_resets.find({}, {"_id": 0}).to_list(1000)}
+    offsets = {r["email"]: r for r in await db.permanentka_resets.find({}, {"_id": 0}).to_list(1000)}
     for email in sorted(registered_total.keys(), key=lambda e: attended.get(e, 0), reverse=True):
-        perm = max(0, permanentka.get(email, 0) - resets.get(email, 0))
+        off = offsets.get(email, {})
+        perm = max(0, permanentka.get(email, 0) - off.get("baseline", 0) + off.get("adjustment", 0))
         stamps = 0 if perm == 0 else ((perm - 1) % 10) + 1
         runners.append({
             "name": names.get(email, email),
@@ -314,10 +334,45 @@ async def reset_permanentka(body: ResetPermanentkaBody):
             raw += 1
     await db.permanentka_resets.update_one(
         {"email": body.email},
-        {"$set": {"email": body.email, "baseline": raw, "reset_at": now.isoformat()}},
+        {"$set": {"email": body.email, "baseline": raw, "adjustment": 0, "reset_at": now.isoformat()}},
         upsert=True,
     )
     return {"email": body.email, "permanentka_count": 0, "baseline": raw}
+
+
+@api_router.post("/admin/permanentka-adjust")
+async def adjust_permanentka(body: AdjustPermanentkaBody):
+    if not is_admin(body.admin_email):
+        raise HTTPException(status_code=403, detail="Prístup len pre organizátora")
+    await db.permanentka_resets.update_one(
+        {"email": body.email},
+        {"$inc": {"adjustment": body.amount}, "$setOnInsert": {"email": body.email, "baseline": 0}},
+        upsert=True,
+    )
+    return {"email": body.email}
+
+
+@api_router.put("/trainings/{training_id}", response_model=Training)
+async def update_training(training_id: str, body: TrainingUpdate):
+    if not is_admin(body.admin_email):
+        raise HTTPException(status_code=403, detail="Len organizátor môže upravovať tréningy")
+    doc = await db.trainings.find_one({"id": training_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Tréning nenájdený")
+    update = {k: v for k, v in body.model_dump().items() if k != "admin_email"}
+    await db.trainings.update_one({"id": training_id}, {"$set": update})
+    doc.update(update)
+    return Training(**doc)
+
+
+@api_router.delete("/trainings/{training_id}")
+async def delete_training(training_id: str, admin_email: str):
+    if not is_admin(admin_email):
+        raise HTTPException(status_code=403, detail="Len organizátor môže mazať tréningy")
+    res = await db.trainings.delete_one({"id": training_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tréning nenájdený")
+    return {"deleted": True, "id": training_id}
 
 
 app.include_router(api_router)
