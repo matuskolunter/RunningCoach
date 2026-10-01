@@ -12,4 +12,5 @@ export const api = {
   dashboard: (email) => axios.get(`${API}/users/${encodeURIComponent(email)}/dashboard`).then((r) => r.data),
   getConfig: () => axios.get(`${API}/config`).then((r) => r.data),
   adminReport: (adminEmail) => axios.get(`${API}/admin/report`, { params: { admin_email: adminEmail } }).then((r) => r.data),
+  resetPermanentka: (adminEmail, email) => axios.post(`${API}/admin/reset-permanentka`, { admin_email: adminEmail, email }).then((r) => r.data),
 };

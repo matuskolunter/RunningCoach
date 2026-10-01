@@ -1,21 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, MapPin, Calendar, Trophy, ClipboardList, Ticket, UsersRound } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Users, MapPin, Calendar, Trophy, ClipboardList, Ticket, UsersRound, RotateCcw } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/identity";
+import { toast } from "sonner";
 
 export const OrganizerDashboard = ({ identity }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!identity?.email) return;
-    setLoading(true);
     api.adminReport(identity.email).then((d) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, [identity]);
+
+  useEffect(() => { setLoading(true); load(); }, [load]);
+
+  const handleReset = async (runner) => {
+    setResetting(runner.email);
+    try {
+      await api.resetPermanentka(identity.email, runner.email);
+      toast.success(`Permanentka pre ${runner.name} bola vynulovaná`);
+      load();
+    } catch {
+      toast.error("Vynulovanie zlyhalo");
+    } finally {
+      setResetting(null);
+    }
+  };
 
   if (loading) return <div className="text-muted-foreground py-20 text-center">Načítavam...</div>;
 
@@ -65,6 +83,7 @@ export const OrganizerDashboard = ({ identity }) => {
                 <TableHead>Email</TableHead>
                 <TableHead className="text-center">Absolvované</TableHead>
                 <TableHead className="text-right">Permanentka</TableHead>
+                <TableHead className="text-right">Akcia</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,6 +106,30 @@ export const OrganizerDashboard = ({ identity }) => {
                         ostáva {r.permanentka_remaining}{r.completed_cards > 0 ? ` · dokončené ${r.completed_cards}` : ""}
                       </span>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline" disabled={resetting === r.email || r.permanentka_stamps === 0} data-testid={`org-reset-perm-${i}`} className="border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 font-semibold text-xs">
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Vynulovať
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border" data-testid={`org-reset-dialog-${i}`}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="font-heading uppercase tracking-tight">Vynulovať permanentku?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Naozaj chceš vynulovať permanentku pre <span className="text-foreground font-semibold">{r.name}</span> ({r.email})?
+                            Počítadlo sa nastaví na 0 z 10. Celkový počet absolvovaných tréningov ({r.attended_count}) ostáva zachovaný.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel data-testid={`org-reset-cancel-${i}`}>Zrušiť</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleReset(r)} data-testid={`org-reset-confirm-${i}`} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold">
+                            Vynulovať
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}

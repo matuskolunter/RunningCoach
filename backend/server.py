@@ -85,6 +85,11 @@ class JoinBody(BaseModel):
     email: EmailStr
 
 
+class ResetPermanentkaBody(BaseModel):
+    admin_email: EmailStr
+    email: EmailStr
+
+
 # ---------- User routes ----------
 @api_router.post("/users", response_model=User)
 async def upsert_user(input: UserCreate):
@@ -192,6 +197,9 @@ async def user_dashboard(email: str):
                 permanentka_count += 1
     upcoming.sort(key=lambda t: t.date)
     past.sort(key=lambda t: t.date, reverse=True)
+    reset = await db.permanentka_resets.find_one({"email": email}, {"_id": 0})
+    baseline = reset["baseline"] if reset else 0
+    permanentka_count = max(0, permanentka_count - baseline)
     return {
         "attended_count": len(past),
         "permanentka_count": permanentka_count,
@@ -245,8 +253,9 @@ async def admin_report(admin_email: str):
                     permanentka[p.email] = permanentka.get(p.email, 0) + 1
 
     runners = []
+    resets = {r["email"]: r["baseline"] for r in await db.permanentka_resets.find({}, {"_id": 0}).to_list(1000)}
     for email in sorted(registered_total.keys(), key=lambda e: attended.get(e, 0), reverse=True):
-        perm = permanentka.get(email, 0)
+        perm = max(0, permanentka.get(email, 0) - resets.get(email, 0))
         stamps = 0 if perm == 0 else ((perm - 1) % 10) + 1
         runners.append({
             "name": names.get(email, email),
@@ -280,6 +289,35 @@ async def admin_report(admin_email: str):
             ],
         })
     return {"trainings": result, "runners": runners}
+
+
+@api_router.post("/admin/reset-permanentka")
+async def reset_permanentka(body: ResetPermanentkaBody):
+    if not is_admin(body.admin_email):
+        raise HTTPException(status_code=403, detail="Prístup len pre organizátora")
+    now = datetime.now(timezone.utc)
+
+    def parse(dt: str):
+        try:
+            d = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+            if d.tzinfo is None:
+                d = d.replace(tzinfo=timezone.utc)
+            return d
+        except Exception:
+            return now
+
+    docs = await db.trainings.find({"participants.email": body.email}, {"_id": 0}).to_list(1000)
+    raw = 0
+    for d in docs:
+        t = Training(**d)
+        if parse(t.date) < now and t.use_permanentka:
+            raw += 1
+    await db.permanentka_resets.update_one(
+        {"email": body.email},
+        {"$set": {"email": body.email, "baseline": raw, "reset_at": now.isoformat()}},
+        upsert=True,
+    )
+    return {"email": body.email, "permanentka_count": 0, "baseline": raw}
 
 
 app.include_router(api_router)
