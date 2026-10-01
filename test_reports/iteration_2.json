@@ -1,0 +1,49 @@
+{
+  "summary": "Full end-to-end verification of iteration 2 features (admin edit/delete training + manual permanentka adjust). Backend: 13/13 pytest cases passed covering create/update/delete/adjust/reset with admin-authorization 403 checks and Create->GET persistence verification. Frontend: Playwright flows for admin (create/edit/delete via UI), runner gating (no admin UI), join flow, organizer dashboard permanentka +4 and reset-to-0, and cross-user verification (runner Moja účasť correctly shows 4 z 10 after admin adjust). All data-testid selectors from the request match implementation.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "GET /api/config lists admin email matusko.lunter@gmail.com",
+    "POST /api/trainings 403 for non-admin",
+    "POST /api/trainings 200 for admin (TEST_training_e2e created)",
+    "PUT /api/trainings/{id} updates title/location/distance; GET confirms persistence",
+    "PUT /api/trainings/{id} 403 for non-admin",
+    "DELETE /api/trainings/{id} 403 for non-admin",
+    "DELETE /api/trainings/{id} 200 for admin; subsequent GET returns 404",
+    "POST /api/admin/permanentka-adjust 403 for non-admin",
+    "POST /api/admin/permanentka-adjust +4 reflected in GET /api/users/{email}/dashboard permanentka_count=4",
+    "POST /api/admin/reset-permanentka 403 for non-admin",
+    "POST /api/admin/reset-permanentka zeros permanentka_count",
+    "GET /api/admin/report requires admin (403 for non-admin, 200 for admin)",
+    "UI admin: Vytvoriť tréning hero button + organizer Dashboard tab visible for Matús",
+    "UI admin: edit-btn-{id} opens prefilled form; saving via submit-training-btn updates card (location + distance verified in DOM)",
+    "UI admin: delete-btn-{id} + delete-confirm-{id} removes card from list",
+    "UI runner (peter...@example.com): no open-create-training-btn, no edit/delete btns, no nav-organizer-btn",
+    "UI runner: join-btn increments participants-count-{id} from 0/10 to 1/10",
+    "UI organizer dashboard: org-adjust-perm-{i} + input=4 + confirm updates org-runner-perm-{i} to '4 z 10'",
+    "UI cross-user: runner Dashboard (Moja účasť) displays '4 z 10' after admin adjustment",
+    "UI organizer dashboard: org-reset-perm-{i} + confirm resets badge to '0 z 10'"
+  ],
+  "failed": [],
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: TrainingUpdate schema requires all fields (title/date/location/distance_km/capacity) - PATCH-style partial update not supported, but acceptable since the UI always sends full payload.",
+    "Minor: Permanentka effective value is derived as max(0, raw - baseline + adjustment). When admin repeatedly presses 'Vynulovať' and then 'Pridať +N' there is no audit log; consider a dedicated adjustments collection if history/audit becomes a requirement.",
+    "Minor: AdjustPermanentkaDialog rejects amount=0 with 'Zadaj počet tréningov' which is correct, but there's no min/max validation server-side; a very large value will be accepted. Non-blocking for an admin-only internal action."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend.py (new)",
+    "/app/test_reports/iteration_2.json (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: name 'Matús', email 'matusko.lunter@gmail.com'. Runner: any email (test used ephemeral peter{ts}@example.com). Passwordless; identity in localStorage key rp_identity.",
+  "seed_data_creation": "Created and immediately deleted TEST_training_e2e, TEST_delete_me, TEST_UI_{ts}, TEST_UPC_{ts}. One leftover test user permanentka_resets doc may remain for ephemeral runner email (harmless, zeroed by reset at end of test).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Admin gating is via ADMIN_EMAILS env; matusko.lunter@gmail.com is admin. Server date is ~2026-10-01 so trainings dated 01. októbra 2026 behave as past (no join button). To test join/organizer flows, create a NEW upcoming training (year 2030+) first. UI delete requires AlertDialog confirm. The /api/trainings/{id} DELETE takes admin_email as query param, PUT takes it in JSON body."
+}
