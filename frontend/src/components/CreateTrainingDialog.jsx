@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-const empty = { title: "", date: "", time: "", location: "", distance_km: "", capacity: "", pace: "", description: "" };
+const empty = { title: "", date: "", time: "", location: "", distance_km: "", capacity: "", pace: "", description: "", use_permanentka: true };
 
 export const CreateTrainingDialog = ({ identity, onCreated }) => {
   const [open, setOpen] = useState(false);
@@ -34,6 +35,7 @@ export const CreateTrainingDialog = ({ identity, onCreated }) => {
         capacity: parseInt(form.capacity, 10),
         pace: form.pace,
         description: form.description,
+        use_permanentka: form.use_permanentka,
         organizer_name: identity?.name || "",
         organizer_email: identity?.email || "",
       });
@@ -95,6 +97,21 @@ export const CreateTrainingDialog = ({ identity, onCreated }) => {
           <div className="space-y-2">
             <Label>Popis</Label>
             <Textarea data-testid="training-description-input" value={form.description} onChange={set("description")} placeholder="Voľný text o tréningu..." rows={3} />
+          </div>
+          <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/40 p-3">
+            <Checkbox
+              id="use-permanentka"
+              data-testid="training-permanentka-checkbox"
+              checked={form.use_permanentka}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, use_permanentka: !!v }))}
+              className="mt-0.5"
+            />
+            <div className="space-y-1">
+              <Label htmlFor="use-permanentka" className="cursor-pointer">Použiť permanentku</Label>
+              <p className="text-xs text-muted-foreground">
+                Ak je zakliknuté, účasť sa započíta do permanentky (X z 10). Pri free udalostiach nechaj nezaškrtnuté — započíta sa len do celkového počtu tréningov.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading} data-testid="submit-training-btn" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wide active:scale-95 transition-transform">

@@ -61,6 +61,7 @@ class TrainingCreate(BaseModel):
     pace: Optional[str] = ""
     organizer_name: Optional[str] = ""
     organizer_email: Optional[str] = ""
+    use_permanentka: bool = True
 
 
 class Training(BaseModel):
@@ -74,6 +75,7 @@ class Training(BaseModel):
     pace: str = ""
     organizer_name: str = ""
     organizer_email: str = ""
+    use_permanentka: bool = True
     participants: List[Participant] = []
     created_at: str = Field(default_factory=now_iso)
 
@@ -179,16 +181,20 @@ async def user_dashboard(email: str):
 
     upcoming, past = [], []
     total_km = 0.0
+    permanentka_count = 0
     for t in trainings:
         if parse(t.date) >= now:
             upcoming.append(t)
         else:
             past.append(t)
             total_km += t.distance_km
+            if t.use_permanentka:
+                permanentka_count += 1
     upcoming.sort(key=lambda t: t.date)
     past.sort(key=lambda t: t.date, reverse=True)
     return {
         "attended_count": len(past),
+        "permanentka_count": permanentka_count,
         "upcoming_count": len(upcoming),
         "total_km": round(total_km, 1),
         "upcoming": [t.model_dump() for t in upcoming],

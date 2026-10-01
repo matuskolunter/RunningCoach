@@ -45,8 +45,9 @@ export const Dashboard = ({ identity }) => {
   }, [identity]);
 
   const attended = data?.attended_count || 0;
-  const stamps = attended === 0 ? 0 : ((attended - 1) % 10) + 1; // 1..10
-  const completedCards = Math.floor(attended / 10);
+  const permanentka = data?.permanentka_count || 0;
+  const stamps = permanentka === 0 ? 0 : ((permanentka - 1) % 10) + 1; // 1..10
+  const completedCards = Math.floor(permanentka / 10);
 
   // Show celebration once per completed card (per runner)
   useEffect(() => {
