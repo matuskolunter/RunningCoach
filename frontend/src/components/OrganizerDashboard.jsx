@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, MapPin, Calendar, Trophy, ClipboardList } from "lucide-react";
+import { Users, MapPin, Calendar, Trophy, ClipboardList, Ticket, UsersRound } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/identity";
 
@@ -20,6 +20,7 @@ export const OrganizerDashboard = ({ identity }) => {
   if (loading) return <div className="text-muted-foreground py-20 text-center">Načítavam...</div>;
 
   const trainings = data?.trainings || [];
+  const runners = data?.runners || [];
   const totalRegistrations = trainings.reduce((s, t) => s + t.participants.length, 0);
 
   return (
@@ -41,7 +42,58 @@ export const OrganizerDashboard = ({ identity }) => {
           <div className="font-heading text-3xl font-black">{totalRegistrations}</div>
           <div className="text-xs text-muted-foreground uppercase tracking-wide font-mono-t mt-1">Registrácií spolu</div>
         </Card>
+        <Card className="bg-card border-border p-5 rounded-xl" data-testid="org-stat-runners">
+          <div className="font-heading text-3xl font-black">{runners.length}</div>
+          <div className="text-xs text-muted-foreground uppercase tracking-wide font-mono-t mt-1">Bežcov spolu</div>
+        </Card>
       </div>
+
+      {/* Zoznam všetkých bežcov */}
+      <Card className="bg-card border-border p-5 rounded-xl" data-testid="org-runners-card">
+        <h3 className="font-heading text-lg font-bold uppercase tracking-tight mb-1 flex items-center gap-2">
+          <UsersRound className="h-5 w-5 text-primary" /> Všetci bežci
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">Prehľad všetkých prihlásených bežcov, ich absolvované tréningy a stav permanentky.</p>
+        {runners.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">Zatiaľ sa nikto neprihlásil.</p>
+        ) : (
+          <Table data-testid="org-runners-table">
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Meno</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead className="text-center">Absolvované</TableHead>
+                <TableHead className="text-right">Permanentka</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {runners.map((r, i) => (
+                <TableRow key={r.email} className="border-border" data-testid={`org-runner-${i}`}>
+                  <TableCell className="text-muted-foreground font-mono-t">{i + 1}</TableCell>
+                  <TableCell className="font-semibold">{r.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge className="bg-primary/15 text-primary border border-primary/30 font-mono-t">
+                      <Trophy className="h-3 w-3 mr-1" />{r.attended_count}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="inline-flex flex-col items-end gap-0.5">
+                      <Badge variant="outline" className="font-mono-t border-border" data-testid={`org-runner-perm-${i}`}>
+                        <Ticket className="h-3 w-3 mr-1 text-accent" />{r.permanentka_stamps} z 10
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground font-mono-t">
+                        ostáva {r.permanentka_remaining}{r.completed_cards > 0 ? ` · dokončené ${r.completed_cards}` : ""}
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
 
       {trainings.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">Zatiaľ žiadne tréningy.</div>

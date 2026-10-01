@@ -232,12 +232,32 @@ async def admin_report(admin_email: str):
     # attended count per email = number of PAST trainings they participated in
     attended = {}
     registered_total = {}
+    permanentka = {}
+    names = {}
     for t in trainings:
         past = parse(t.date) < now
         for p in t.participants:
             registered_total[p.email] = registered_total.get(p.email, 0) + 1
+            names[p.email] = p.name
             if past:
                 attended[p.email] = attended.get(p.email, 0) + 1
+                if t.use_permanentka:
+                    permanentka[p.email] = permanentka.get(p.email, 0) + 1
+
+    runners = []
+    for email in sorted(registered_total.keys(), key=lambda e: attended.get(e, 0), reverse=True):
+        perm = permanentka.get(email, 0)
+        stamps = 0 if perm == 0 else ((perm - 1) % 10) + 1
+        runners.append({
+            "name": names.get(email, email),
+            "email": email,
+            "attended_count": attended.get(email, 0),
+            "registered_count": registered_total.get(email, 0),
+            "permanentka_count": perm,
+            "permanentka_stamps": stamps,
+            "permanentka_remaining": 10 - stamps,
+            "completed_cards": perm // 10,
+        })
 
     result = []
     for t in trainings:
@@ -259,7 +279,7 @@ async def admin_report(admin_email: str):
                 for p in t.participants
             ],
         })
-    return {"trainings": result}
+    return {"trainings": result, "runners": runners}
 
 
 app.include_router(api_router)
