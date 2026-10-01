@@ -88,3 +88,8 @@ frontend/.env
 .env
 frontend/.env
 .env
+.env.*
+*.env
+credentials.json
+*.key
+.credentials
