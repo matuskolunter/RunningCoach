@@ -108,6 +108,20 @@ class TrainingUpdate(BaseModel):
     use_permanentka: bool = True
 
 
+class RecurringCreate(BaseModel):
+    admin_email: EmailStr
+    dates: List[str]
+    title: str
+    location: str
+    distance_km: float
+    capacity: int
+    description: Optional[str] = ""
+    pace: Optional[str] = ""
+    use_permanentka: bool = True
+    organizer_name: Optional[str] = ""
+    organizer_email: Optional[str] = ""
+
+
 # ---------- User routes ----------
 @api_router.post("/users", response_model=User)
 async def upsert_user(input: UserCreate):
@@ -138,6 +152,32 @@ async def create_training(input: TrainingCreate):
     training = Training(**input.model_dump())
     await db.trainings.insert_one(training.model_dump())
     return training
+
+
+@api_router.post("/trainings/recurring")
+async def create_recurring_trainings(body: RecurringCreate):
+    if not is_admin(body.admin_email):
+        raise HTTPException(status_code=403, detail="Len organizátor môže vytvárať tréningy")
+    if not body.dates:
+        raise HTTPException(status_code=400, detail="Žiadne termíny")
+    if len(body.dates) > 200:
+        raise HTTPException(status_code=400, detail="Príliš veľa opakovaní (max 200)")
+    created = []
+    for iso in body.dates:
+        created.append(Training(
+            title=body.title,
+            date=iso,
+            location=body.location,
+            distance_km=body.distance_km,
+            capacity=body.capacity,
+            description=body.description or "",
+            pace=body.pace or "",
+            use_permanentka=body.use_permanentka,
+            organizer_name=body.organizer_name or "",
+            organizer_email=body.organizer_email or "",
+        ))
+    await db.trainings.insert_many([t.model_dump() for t in created])
+    return {"created": len(created)}
 
 
 @api_router.get("/trainings", response_model=List[Training])

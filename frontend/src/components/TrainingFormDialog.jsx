@@ -5,10 +5,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Repeat } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-const empty = { title: "", date: "", time: "", location: "", distance_km: "", capacity: "", pace: "", description: "", use_permanentka: true };
+const WEEKDAYS = [
+  { label: "Po", v: 1 },
+  { label: "Ut", v: 2 },
+  { label: "St", v: 3 },
+  { label: "Št", v: 4 },
+  { label: "Pi", v: 5 },
+  { label: "So", v: 6 },
+  { label: "Ne", v: 0 },
+];
+
+function computeOccurrences(startStr, endStr, timeStr, weekdays) {
+  const [hh, mm] = timeStr.split(":").map(Number);
+  const end = new Date(`${endStr}T00:00:00`);
+  const set = new Set(weekdays);
+  const out = [];
+  const cur = new Date(`${startStr}T00:00:00`);
+  while (cur <= end && out.length < 500) {
+    if (set.has(cur.getDay())) {
+      out.push(new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), hh, mm).toISOString());
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+const empty = { title: "", date: "", time: "", location: "", distance_km: "", capacity: "", pace: "", description: "", use_permanentka: true, recurring: false, weekdays: [], end_date: "" };
 
 function fromTraining(t) {
   if (!t) return empty;
@@ -24,6 +50,9 @@ function fromTraining(t) {
     pace: t.pace || "",
     description: t.description || "",
     use_permanentka: t.use_permanentka !== false,
+    recurring: false,
+    weekdays: [],
+    end_date: "",
   };
 }
 
@@ -46,10 +75,8 @@ export const TrainingFormDialog = ({ open, onOpenChange, identity, training, onS
     }
     setLoading(true);
     try {
-      const iso = new Date(`${form.date}T${form.time}`).toISOString();
       const base = {
         title: form.title,
-        date: iso,
         location: form.location,
         distance_km: parseFloat(form.distance_km),
         capacity: parseInt(form.capacity, 10),
@@ -57,12 +84,26 @@ export const TrainingFormDialog = ({ open, onOpenChange, identity, training, onS
         description: form.description,
         use_permanentka: form.use_permanentka,
       };
-      if (isEdit) {
-        await api.updateTraining(training.id, { ...base, admin_email: identity?.email || "" });
-        toast.success("Tréning upravený!");
+      if (form.recurring && !isEdit) {
+        if (!form.end_date || form.weekdays.length === 0) {
+          toast.error("Vyber deň v týždni a dátum do kedy opakovať");
+          setLoading(false);
+          return;
+        }
+        const dates = computeOccurrences(form.date, form.end_date, form.time, form.weekdays);
+        if (dates.length === 0) { toast.error("Žiadne termíny v zadanom rozsahu"); setLoading(false); return; }
+        if (dates.length > 200) { toast.error("Príliš veľa opakovaní (max 200)"); setLoading(false); return; }
+        await api.createRecurringTrainings({ ...base, dates, admin_email: identity?.email || "", organizer_name: identity?.name || "", organizer_email: identity?.email || "" });
+        toast.success(`Vytvorených ${dates.length} tréningov!`);
       } else {
-        await api.createTraining({ ...base, organizer_name: identity?.name || "", organizer_email: identity?.email || "" });
-        toast.success("Tréning vytvorený!");
+        const iso = new Date(`${form.date}T${form.time}`).toISOString();
+        if (isEdit) {
+          await api.updateTraining(training.id, { ...base, date: iso, admin_email: identity?.email || "" });
+          toast.success("Tréning upravený!");
+        } else {
+          await api.createTraining({ ...base, date: iso, organizer_name: identity?.name || "", organizer_email: identity?.email || "" });
+          toast.success("Tréning vytvorený!");
+        }
       }
       onOpenChange(false);
       onSaved();
@@ -86,7 +127,7 @@ export const TrainingFormDialog = ({ open, onOpenChange, identity, training, onS
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Dátum *</Label>
+              <Label>{form.recurring ? "Od dátumu *" : "Dátum *"}</Label>
               <Input type="date" data-testid="training-date-input" value={form.date} onChange={set("date")} />
             </div>
             <div className="space-y-2">
@@ -94,6 +135,44 @@ export const TrainingFormDialog = ({ open, onOpenChange, identity, training, onS
               <Input type="time" data-testid="training-time-input" value={form.time} onChange={set("time")} />
             </div>
           </div>
+          {!isEdit && (
+            <div className="rounded-lg border border-border bg-secondary/40 p-3 space-y-3">
+              <div className="flex items-start gap-3">
+                <Checkbox id="recurring" data-testid="training-recurring-checkbox" checked={form.recurring} onCheckedChange={(v) => setForm((f) => ({ ...f, recurring: !!v }))} className="mt-0.5" />
+                <div className="space-y-1">
+                  <Label htmlFor="recurring" className="cursor-pointer flex items-center gap-1"><Repeat className="h-3.5 w-3.5" /> Opakujúci sa tréning</Label>
+                  <p className="text-xs text-muted-foreground">Vytvorí tréning opakovane vo vybrané dni v týždni až do zvoleného dátumu (napr. každý utorok a štvrtok o 18:00). Pole „Dátum" slúži ako začiatok.</p>
+                </div>
+              </div>
+              {form.recurring && (
+                <div className="space-y-3 pt-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Dni v týždni *</Label>
+                    <div className="flex flex-wrap gap-1.5" data-testid="weekday-chips">
+                      {WEEKDAYS.map((w) => {
+                        const active = form.weekdays.includes(w.v);
+                        return (
+                          <button
+                            key={w.v}
+                            type="button"
+                            data-testid={`weekday-${w.v}`}
+                            onClick={() => setForm((f) => ({ ...f, weekdays: active ? f.weekdays.filter((x) => x !== w.v) : [...f.weekdays, w.v] }))}
+                            className={`h-9 w-11 rounded-lg text-xs font-bold border transition-all active:scale-95 ${active ? "bg-primary border-primary text-primary-foreground" : "bg-card border-border text-muted-foreground hover:border-primary/50"}`}
+                          >
+                            {w.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Opakovať do *</Label>
+                    <Input type="date" data-testid="training-enddate-input" value={form.end_date} onChange={set("end_date")} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Miesto *</Label>
             <Input data-testid="training-location-input" value={form.location} onChange={set("location")} placeholder="Sad Janka Kráľa, Bratislava" />
