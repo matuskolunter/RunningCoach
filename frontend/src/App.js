@@ -110,7 +110,7 @@ export default function App() {
               <p className="text-muted-foreground mt-4 max-w-xl animate-fade-up" style={{ animationDelay: "120ms" }}>
                 {isAdmin
                   ? "Vytváraj tréningy, spravuj ich a sleduj prihlásených bežcov."
-                  : "Prihlás sa na tréningy jedným klikom a sleduj, koľkých behov si sa zúčastnil."}
+                  : "Prihlás sa na tréningy jedným klikom a sleduj, koľkých behov si sa zúčastnil/a."}
               </p>
               {isAdmin && (
                 <div className="mt-8 animate-fade-up" style={{ animationDelay: "180ms" }}>
@@ -163,7 +163,7 @@ export default function App() {
       )}
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground font-mono-t">
-        RunPulse — Bežecké tréningy & udalosti
+        RunningCoach — Bežecké tréningy & udalosti
       </footer>
     </div>
   );
