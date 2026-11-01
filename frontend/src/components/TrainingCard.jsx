@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MapPin, Calendar, Clock, Users, Flame, Gauge, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Calendar, Clock, Users, Flame, Gauge, CheckCircle2, Pencil, Trash2, ChevronDown } from "lucide-react";
 import { formatDate, formatTime, isPast } from "@/lib/identity";
 
 export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index = 0, isAdmin, onEdit, onDelete }) => {
+  const [showRunners, setShowRunners] = useState(false);
   const joined = identity && training.participants.some((p) => p.email === identity.email);
   const full = training.participants.length >= training.capacity;
   const past = isPast(training.date);
@@ -48,6 +50,19 @@ export const TrainingCard = ({ training, identity, onJoin, onLeave, busy, index 
         <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${fillPct}%` }} />
         </div>
+        {training.participants.length > 0 && (
+          <button type="button" onClick={() => setShowRunners((v) => !v)} data-testid={`toggle-runners-${training.id}`} className="mt-2 text-xs text-primary hover:underline flex items-center gap-1">
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showRunners ? "rotate-180" : ""}`} />
+            {showRunners ? "Skryť bežcov" : "Zobraziť bežcov"}
+          </button>
+        )}
+        {showRunners && (
+          <ul className="mt-2 flex flex-wrap gap-1.5" data-testid={`runners-list-${training.id}`}>
+            {training.participants.map((p, i) => (
+              <li key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground" data-testid={`runner-name-${training.id}-${i}`}>{p.name}</li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {!past && (

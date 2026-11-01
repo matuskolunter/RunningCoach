@@ -24,3 +24,7 @@ Slovak app to create events/running trainings where runners can register and see
 ## Backlog / Remaining
 - P1: Per-training participant list view / organizer management
 - P2: Email reminders, badges/achievements, edit/delete trainings, mark attendance explicitly
+
+## Update (June 2026)
+- Organizer dashboard: Nadchádzajúce / Minulé tréningy toggle (default upcoming).
+- Privacy: public training endpoints accept `viewer`; non-admins get participants as "Meno P." without emails (own entry kept full). Admin sees everything. Training cards have "Zobraziť bežcov" list.

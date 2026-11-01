@@ -65,6 +65,7 @@ export const OrganizerDashboard = ({ identity }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(null);
+  const [period, setPeriod] = useState("upcoming");
 
   const load = useCallback(() => {
     if (!identity?.email) return;
@@ -90,6 +91,9 @@ export const OrganizerDashboard = ({ identity }) => {
 
   const trainings = data?.trainings || [];
   const runners = data?.runners || [];
+  const shown = period === "upcoming"
+    ? trainings.filter((t) => !t.is_past)
+    : trainings.filter((t) => t.is_past).reverse();
   const totalRegistrations = trainings.reduce((s, t) => s + t.participants.length, 0);
 
   return (
@@ -192,11 +196,18 @@ export const OrganizerDashboard = ({ identity }) => {
         )}
       </Card>
 
-      {trainings.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">Zatiaľ žiadne tréningy.</div>
+      <div className="inline-flex rounded-lg border border-border p-1 bg-card">
+        <Button size="sm" variant={period === "upcoming" ? "secondary" : "ghost"} onClick={() => setPeriod("upcoming")} data-testid="org-tab-upcoming" className="font-semibold">Nadchádzajúce</Button>
+        <Button size="sm" variant={period === "past" ? "secondary" : "ghost"} onClick={() => setPeriod("past")} data-testid="org-tab-past" className="font-semibold">Minulé tréningy</Button>
+      </div>
+
+      {shown.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground" data-testid="org-trainings-empty">
+          {period === "upcoming" ? "Žiadne nadchádzajúce tréningy." : "Žiadne minulé tréningy."}
+        </div>
       ) : (
         <Accordion type="single" collapsible className="space-y-3">
-          {trainings.map((t) => (
+          {shown.map((t) => (
             <AccordionItem key={t.id} value={t.id} className="border border-border rounded-xl bg-card px-4" data-testid={`org-training-${t.id}`}>
               <AccordionTrigger className="hover:no-underline py-4" data-testid={`org-training-trigger-${t.id}`}>
                 <div className="flex flex-1 items-center justify-between gap-3 pr-3">

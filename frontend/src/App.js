@@ -29,8 +29,8 @@ export default function App() {
   const [editingTraining, setEditingTraining] = useState(null);
 
   const refresh = useCallback(() => {
-    api.listTrainings().then(setTrainings).catch(() => {});
-  }, []);
+    api.listTrainings(identity?.email).then(setTrainings).catch(() => {});
+  }, [identity]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { api.getConfig().then((c) => setAdminEmails(c.admin_emails || [])).catch(() => {}); }, []);

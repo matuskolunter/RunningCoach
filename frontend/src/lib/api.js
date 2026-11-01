@@ -5,7 +5,7 @@ export const API = `${BACKEND_URL}/api`;
 
 export const api = {
   upsertUser: (name, email) => axios.post(`${API}/users`, { name, email }).then((r) => r.data),
-  listTrainings: () => axios.get(`${API}/trainings`).then((r) => r.data),
+  listTrainings: (viewer) => axios.get(`${API}/trainings`, { params: viewer ? { viewer } : {} }).then((r) => r.data),
   createTraining: (payload) => axios.post(`${API}/trainings`, payload).then((r) => r.data),
   createRecurringTrainings: (payload) => axios.post(`${API}/trainings/recurring`, payload).then((r) => r.data),
   join: (id, name, email) => axios.post(`${API}/trainings/${id}/join`, { name, email }).then((r) => r.data),

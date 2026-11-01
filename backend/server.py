@@ -51,6 +51,25 @@ class Participant(BaseModel):
     email: EmailStr
 
 
+def short_name(name: str) -> str:
+    parts = name.split()
+    if len(parts) < 2:
+        return name
+    return f"{parts[0]} {parts[-1][0].upper()}."
+
+
+def public_training(t: "Training", viewer: Optional[str]) -> dict:
+    d = t.model_dump()
+    if is_admin(viewer):
+        return d
+    v = (viewer or "").strip().lower()
+    d["participants"] = [
+        {"name": p.name, "email": p.email} if p.email.lower() == v else {"name": short_name(p.name)}
+        for p in t.participants
+    ]
+    return d
+
+
 class TrainingCreate(BaseModel):
     title: str
     date: str  # ISO datetime string
@@ -180,28 +199,28 @@ async def create_recurring_trainings(body: RecurringCreate):
     return {"created": len(created)}
 
 
-@api_router.get("/trainings", response_model=List[Training])
-async def list_trainings():
+@api_router.get("/trainings")
+async def list_trainings(viewer: Optional[str] = None):
     docs = await db.trainings.find({}, {"_id": 0}).sort("date", 1).to_list(1000)
-    return [Training(**d) for d in docs]
+    return [public_training(Training(**d), viewer) for d in docs]
 
 
-@api_router.get("/trainings/{training_id}", response_model=Training)
-async def get_training(training_id: str):
+@api_router.get("/trainings/{training_id}")
+async def get_training(training_id: str, viewer: Optional[str] = None):
     doc = await db.trainings.find_one({"id": training_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Tréning nenájdený")
-    return Training(**doc)
+    return public_training(Training(**doc), viewer)
 
 
-@api_router.post("/trainings/{training_id}/join", response_model=Training)
+@api_router.post("/trainings/{training_id}/join")
 async def join_training(training_id: str, body: JoinBody):
     doc = await db.trainings.find_one({"id": training_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Tréning nenájdený")
     training = Training(**doc)
     if any(p.email == body.email for p in training.participants):
-        return training
+        return public_training(training, body.email)
     if len(training.participants) >= training.capacity:
         raise HTTPException(status_code=400, detail="Tréning je plný")
     training.participants.append(Participant(name=body.name, email=body.email))
@@ -209,10 +228,10 @@ async def join_training(training_id: str, body: JoinBody):
         {"id": training_id},
         {"$set": {"participants": [p.model_dump() for p in training.participants]}},
     )
-    return training
+    return public_training(training, body.email)
 
 
-@api_router.post("/trainings/{training_id}/leave", response_model=Training)
+@api_router.post("/trainings/{training_id}/leave")
 async def leave_training(training_id: str, body: JoinBody):
     doc = await db.trainings.find_one({"id": training_id}, {"_id": 0})
     if not doc:
@@ -223,7 +242,7 @@ async def leave_training(training_id: str, body: JoinBody):
         {"id": training_id},
         {"$set": {"participants": [p.model_dump() for p in training.participants]}},
     )
-    return training
+    return public_training(training, body.email)
 
 
 # ---------- Dashboard ----------
@@ -264,8 +283,8 @@ async def user_dashboard(email: str):
         "permanentka_count": permanentka_count,
         "upcoming_count": len(upcoming),
         "total_km": round(total_km, 1),
-        "upcoming": [t.model_dump() for t in upcoming],
-        "past": [t.model_dump() for t in past],
+        "upcoming": [public_training(t, email) for t in upcoming],
+        "past": [public_training(t, email) for t in past],
     }
 
 
@@ -392,7 +411,7 @@ async def adjust_permanentka(body: AdjustPermanentkaBody):
     return {"email": body.email}
 
 
-@api_router.put("/trainings/{training_id}", response_model=Training)
+@api_router.put("/trainings/{training_id}")
 async def update_training(training_id: str, body: TrainingUpdate):
     if not is_admin(body.admin_email):
         raise HTTPException(status_code=403, detail="Len organizátor môže upravovať tréningy")
